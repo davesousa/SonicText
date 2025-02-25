@@ -19,6 +19,13 @@ SonicText is a powerful desktop (Windows) application that converts speech to te
 
 ## Installation
 
+1. Download the latest release from the [Releases](https://github.com/davesousa/sonictext/releases) page
+2. Extract the zip file
+3. Run the `SonicText.exe` file to start the application.
+
+
+## Development
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/davesousa/sonictext.git
