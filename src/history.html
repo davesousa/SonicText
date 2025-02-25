@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - SonicText</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --bg-group: rgba(255, 255, 255, 0.05);
+            --bg-input: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --text-hint: rgba(255, 255, 255, 0.6);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --border-focus: #4a9eff;
+            --scrollbar-track: rgba(255, 255, 255, 0.1);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+            height: 100vh;
+            box-sizing: border-box;
+            -webkit-app-region: drag;
+        }
+
+        body.light-theme {
+            --bg-color: #f5f5f5;
+            --bg-group: rgba(0, 0, 0, 0.05);
+            --bg-input: rgba(0, 0, 0, 0.1);
+            --text-color: #2c2c2c;
+            --text-secondary: rgba(0, 0, 0, 0.8);
+            --text-hint: rgba(0, 0, 0, 0.6);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --scrollbar-track: rgba(0, 0, 0, 0.1);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+
+        .history-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-app-region: no-drag;
+            background: var(--bg-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        body.light-theme .history-container {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+            padding: 0 4px;
+        }
+
+        h2 {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 20px;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .close-button:hover {
+            color: var(--text-color);
+        }
+
+        .history-list {
+            background: var(--bg-group);
+            border-radius: 12px;
+            padding: 16px;
+            flex-grow: 1;
+            overflow-y: auto;
+            margin: 0;
+            height: calc(100% - 60px);
+        }
+
+        .history-item {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            border-color: var(--border-focus);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-content {
+            flex-grow: 1;
+            margin-right: 12px;
+        }
+
+        .history-text {
+            color: var(--text-color);
+            font-size: 14px;
+            margin: 0 0 4px 0;
+            word-break: break-word;
+        }
+
+        .history-date {
+            color: var(--text-hint);
+            font-size: 12px;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .history-button {
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .history-button:hover {
+            opacity: 1;
+        }
+
+        .history-button svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-color);
+        }
+
+        .empty-history {
+            color: var(--text-hint);
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="history-container">
+        <div class="header">
+            <h2>History</h2>
+            <button id="closeButton" class="close-button">×</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- History items will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const historyList = document.getElementById('historyList');
+        const closeButton = document.getElementById('closeButton');
+
+        function formatDate(date) {
+            const now = new Date();
+            const diff = now - new Date(date);
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            if (days === 1) return 'Yesterday';
+            return new Date(date).toLocaleDateString();
+        }
+
+        function createHistoryItem(item) {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="history-content">
+                    <p class="history-text">${item.text}</p>
+                    <p class="history-date">${formatDate(item.timestamp)}</p>
+                </div>
+                <div class="history-actions">
+                    <button class="history-button copy-button" title="Copy to clipboard">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                    <button class="history-button delete-button" title="Delete">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+
+            const copyButton = div.querySelector('.copy-button');
+            const deleteButton = div.querySelector('.delete-button');
+
+            copyButton.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(item.text);
+                } catch (err) {
+                    // Fallback for older browsers or if clipboard API fails
+                    const textArea = document.createElement('textarea');
+                    textArea.value = item.text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+            });
+
+            deleteButton.addEventListener('click', () => {
+                ipcRenderer.send('delete-history-item', item.id);
+            });
+
+            return div;
+        }
+
+        function updateHistoryList(history) {
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">No history items yet</div>';
+                return;
+            }
+            history.forEach(item => {
+                historyList.appendChild(createHistoryItem(item));
+            });
+        }
+
+        // Get current theme and history from main process
+        ipcRenderer.send('get-theme');
+        ipcRenderer.send('get-history');
+
+        ipcRenderer.on('history-updated', (event, history) => {
+            updateHistoryList(history);
+        });
+
+        ipcRenderer.on('current-theme', (event, theme) => {
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+        });
+
+        ipcRenderer.on('theme-changed', (event, theme) => {
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+        });
+
+        closeButton.addEventListener('click', () => {
+            ipcRenderer.send('close-history');
+        });
+    </script>
+</body>
+</html> 
