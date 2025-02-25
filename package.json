@@ -1,6 +1,6 @@
 {
   "name": "sonictext",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A powerful desktop application that converts speech to text in real-time",
   "main": "dist/main.js",
   "scripts": {
