@@ -1,33 +1,32 @@
 {
   "name": "sonictext",
   "version": "1.0.0",
-  "description": "AI-powered voice dictation app",
+  "description": "A powerful desktop application that converts speech to text in real-time",
   "main": "dist/main.js",
   "scripts": {
-    "start": "npm run build && electron .",
-    "build": "tsc && copy src\\index.html dist\\index.html && copy src\\settings.html dist\\settings.html && copy src\\optimize.html dist\\optimize.html",
+    "start": "electron .",
+    "build": "tsc",
+    "dev": "tsc && electron .",
     "watch": "tsc -w",
-    "dist": "electron-builder"
+    "package": "electron-builder"
   },
-  "keywords": [
-    "electron",
-    "voice",
-    "dictation"
-  ],
-  "author": "",
-  "license": "ISC",
+  "author": "Dave Sousa",
+  "license": "Apache-2.0",
   "dependencies": {
-    "@types/electron-localshortcut": "^3.1.3",
-    "@types/node": "^22.13.5",
-    "dotenv": "^16.4.7",
-    "electron": "^34.2.0",
-    "electron-builder": "^25.1.8",
-    "electron-localshortcut": "^3.2.1",
-    "openai": "^4.85.4",
-    "typescript": "^5.7.3"
+    "electron": "^28.2.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "electron-builder": "^24.0.0",
+    "typescript": "^5.0.0"
   },
   "build": {
-    "appId": "com.sonictext.app",
+    "appId": "com.davesousa.sonictext",
+    "productName": "SonicText",
+    "directories": {
+      "output": "build"
+    },
     "win": {
       "target": "nsis"
     }

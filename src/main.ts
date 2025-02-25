@@ -3,17 +3,12 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import OpenAI from 'openai';
-import { OPENAI_API_KEY } from './config';
-import { Readable } from 'stream';
-
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY
-});
 
 let mainWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
 let optimizeWindow: BrowserWindow | null = null;
 let historyWindow: BrowserWindow | null = null;
+let welcomeWindow: BrowserWindow | null = null;
 let isHotkeyPressed = false;
 let pressedKeys = new Set();
 let lastActiveWindow: number | null = null;
@@ -21,41 +16,70 @@ let currentHotkey = 'control+shift+d';
 let currentDeviceId = '';
 let currentLanguage = 'en';
 let currentTheme = 'dark';
+let apiKey = '';
+let openai: OpenAI | null = null;
 let optimizeSettings = {
   enabled: false,
   mode: 'professional'
 };
 let history: { id: string; text: string; timestamp: string; }[] = [];
+let hideWelcomeScreen = false;
 
 // Load settings from file
-const settingsPath = path.join(app.getPath('userData'), 'settings.json');
-try {
-  if (fs.existsSync(settingsPath)) {
-    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    currentHotkey = settings.hotkey || currentHotkey;
-    currentDeviceId = settings.deviceId || '';
-    currentLanguage = settings.language || 'en';
-    currentTheme = settings.theme || 'dark';
-    optimizeSettings = settings.optimize || optimizeSettings;
-    history = settings.history || [];
+function loadSettings() {
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      currentHotkey = settings.hotkey || currentHotkey;
+      currentDeviceId = settings.deviceId || '';
+      currentLanguage = settings.language || 'en';
+      currentTheme = settings.theme || 'dark';
+      optimizeSettings = settings.optimize || optimizeSettings;
+      history = settings.history || [];
+      apiKey = settings.apiKey || '';
+      hideWelcomeScreen = settings.hideWelcomeScreen || false;
+      
+      if (apiKey) {
+        openai = new OpenAI({ apiKey });
+      }
+      return true;
+    }
+  } catch (error) {
+    console.error('Error loading settings:', error);
   }
-} catch (error) {
-  console.error('Error loading settings:', error);
+  return false;
 }
 
+// Save settings to file
 function saveSettings() {
   try {
-    fs.writeFileSync(settingsPath, JSON.stringify({ 
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    const data = JSON.stringify({
       hotkey: currentHotkey,
       deviceId: currentDeviceId,
       language: currentLanguage,
       theme: currentTheme,
       optimize: optimizeSettings,
-      history: history
-    }));
+      history: history,
+      apiKey: apiKey,
+      hideWelcomeScreen
+    });
+    fs.writeFileSync(settingsPath, data);
   } catch (error) {
     console.error('Error saving settings:', error);
   }
+}
+
+// Update API key and OpenAI client
+function updateApiKey(newApiKey: string) {
+  apiKey = newApiKey;
+  if (apiKey) {
+    openai = new OpenAI({ apiKey });
+  } else {
+    openai = null;
+  }
+  saveSettings();
 }
 
 function registerHotkey() {
@@ -198,6 +222,34 @@ function createHistoryWindow() {
   });
 }
 
+function createWelcomeWindow() {
+  try {
+    if (welcomeWindow && !welcomeWindow.isDestroyed()) {
+      welcomeWindow.focus();
+      return;
+    }
+
+    welcomeWindow = new BrowserWindow({
+      width: 960,
+      height: 800,
+      frame: false,
+      resizable: false,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+
+    welcomeWindow.loadFile(path.join(__dirname, 'welcome.html'));
+
+    welcomeWindow.on('closed', () => {
+      welcomeWindow = null;
+    });
+  } catch (error) {
+    console.error('Error creating welcome window:', error);
+  }
+}
+
 function createWindow() {
   try {
     const { width } = screen.getPrimaryDisplay().workAreaSize;
@@ -222,6 +274,7 @@ function createWindow() {
     // Create context menu
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Settings', click: () => createSettingsWindow() },
+      { label: 'Welcome Screen', click: () => createWelcomeWindow() },
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() }
     ]);
@@ -269,6 +322,10 @@ function createWindow() {
     // Handle recorded audio
     ipcMain.on('audio-recorded', async (event, buffer) => {
       try {
+        if (!openai) {
+          throw new Error('Please set your OpenAI API key in settings');
+        }
+
         safeWindowSend(mainWindow, 'transcription-start');
         
         const tempFile = path.join(os.tmpdir(), `recording-${Date.now()}.webm`);
@@ -284,13 +341,11 @@ function createWindow() {
 
         let finalText = transcription.text;
         
-        // Only optimize if enabled
         if (optimizeSettings.enabled) {
           safeWindowSend(mainWindow, 'optimization-start');
           finalText = await optimizeText(finalText, optimizeSettings.mode);
         }
 
-        // Send final result only after all processing is complete
         safeWindowSend(mainWindow, 'transcription-result', finalText);
         clipboard.writeText(finalText);
 
@@ -453,12 +508,40 @@ ipcMain.on('delete-history-item', (event, id) => {
   deleteHistoryItem(id);
 });
 
+ipcMain.on('get-api-key', (event) => {
+  event.reply('current-api-key', apiKey);
+});
+
+ipcMain.on('update-api-key', (event, newApiKey) => {
+  updateApiKey(newApiKey);
+});
+
 // Clean up shortcuts when app quits
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Load settings
+  loadSettings();
+  
+  // Show welcome screen if not hidden
+  if (!hideWelcomeScreen) {
+    createWelcomeWindow();
+  } else {
+    createWindow();
+  }
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      if (!hideWelcomeScreen) {
+        createWelcomeWindow();
+      } else {
+        createWindow();
+      }
+    }
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -466,15 +549,26 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+// Handle welcome screen IPC messages
+ipcMain.on('close-welcome', (event, dontShowAgain) => {
+  try {
+    hideWelcomeScreen = dontShowAgain;
+    saveSettings();
+    if (welcomeWindow && !welcomeWindow.isDestroyed()) {
+      welcomeWindow.close();
+      createWindow();
+    }
+  } catch (error) {
+    console.error('Error closing welcome window:', error);
   }
 });
 
 async function optimizeText(text: string, mode: string): Promise<string> {
   try {
-    // Notify that optimization is starting
+    if (!openai) {
+      throw new Error('Please set your OpenAI API key in settings');
+    }
+
     mainWindow?.webContents.send('optimization-start');
 
     let prompt = '';
@@ -539,4 +633,7 @@ function deleteHistoryItem(id: string) {
   if (historyWindow) {
     historyWindow.webContents.send('history-updated', history);
   }
-} 
+}
+
+// Load settings when app starts
+loadSettings(); 

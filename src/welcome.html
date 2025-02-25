@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to SonicText</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.light-theme {
+            background-color: #ffffff;
+            color: #1e1e1e;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffffff;
+            font-size: 28px;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .setup-step {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .light-theme .setup-step {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .setup-step h2 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #ffffff;
+            font-size: 18px;
+        }
+
+        .light-theme .setup-step h2 {
+            color: #1e1e1e;
+        }
+
+        .input-container {
+            width: 100%;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            background-color: #2d2d2d;
+            color: #ffffff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .light-theme input, .light-theme select {
+            background-color: #ffffff;
+            border-color: #cccccc;
+            color: #1e1e1e;
+        }
+
+        button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #005999;
+        }
+
+        .hint-text {
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .light-theme .instructions {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .instructions h2 {
+            color: #ffffff;
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        .light-theme .instructions h2 {
+            color: #1e1e1e;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+            margin: 16px 0;
+        }
+
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        #apiKeyLink {
+            color: #007acc;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 12px;
+            justify-content: center;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .checkbox-container label {
+            color: var(--text-color);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to SonicText</h1>
+        
+        <div class="setup-grid">
+            <div class="setup-step">
+                <h2>1. Choose Your Theme</h2>
+                <div class="input-container">
+                    <select id="themeSelect">
+                        <option value="dark">Dark Theme</option>
+                        <option value="light">Light Theme</option>
+                    </select>
+                    <div class="hint-text">Select your preferred appearance</div>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <h2>2. Set Your Hotkey</h2>
+                <div class="input-container">
+                    <input type="text" id="hotkeyInput" placeholder="Click to set hotkey" readonly>
+                    <div class="hint-text">Default: Ctrl+Alt+D (Click the input to change)</div>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <h2>3. Select Input Device</h2>
+                <div class="input-container">
+                    <select id="deviceSelect">
+                        <option value="">Loading devices...</option>
+                    </select>
+                    <div class="hint-text">Choose your preferred microphone</div>
+                </div>
+            </div>
+
+            <div class="setup-step">
+                <h2>4. Enter OpenAI API Key</h2>
+                <div class="input-container">
+                    <input type="password" id="apiKeyInput" placeholder="Enter your OpenAI API key">
+                    <div class="hint-text">Don't have an API key? <span id="apiKeyLink">Get one here</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h2>Quick Start Guide</h2>
+            <ul>
+                <li><strong>Recording:</strong> Press your hotkey (default: Ctrl+Alt+D) anywhere to start recording</li>
+                <li><strong>Transcription:</strong> Your speech will be automatically transcribed and copied to clipboard</li>
+                <li><strong>Settings:</strong> Click the gear icon to adjust microphone, language, and other settings</li>
+                <li><strong>History:</strong> Access your past transcriptions through the history panel</li>
+            </ul>
+        </div>
+
+        <button id="startButton">Start Using SonicText</button>
+
+        <div class="checkbox-container">
+            <input type="checkbox" id="dontShowAgain">
+            <label for="dontShowAgain">Don't show this welcome screen on startup</label>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const hotkeyInput = document.getElementById('hotkeyInput');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const themeSelect = document.getElementById('themeSelect');
+        const deviceSelect = document.getElementById('deviceSelect');
+        const startButton = document.getElementById('startButton');
+        const apiKeyLink = document.getElementById('apiKeyLink');
+        const dontShowAgain = document.getElementById('dontShowAgain');
+
+        let currentHotkey = 'CommandOrControl+Alt+D';
+        let recordingKeys = false;
+        let pressedKeys = new Set();
+
+        // Load available audio devices
+        async function loadAudioDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioDevices = devices.filter(device => device.kind === 'audioinput');
+                
+                deviceSelect.innerHTML = '';
+                audioDevices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Microphone ${device.deviceId.slice(0, 5)}...`;
+                    deviceSelect.appendChild(option);
+                });
+
+                // Get current device
+                ipcRenderer.send('get-current-device');
+            } catch (error) {
+                console.error('Error loading audio devices:', error);
+                deviceSelect.innerHTML = '<option value="">Error loading devices</option>';
+            }
+        }
+
+        // Request microphone permissions and load devices
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(() => loadAudioDevices())
+            .catch(error => {
+                console.error('Error getting audio permissions:', error);
+                deviceSelect.innerHTML = '<option value="">No microphone access</option>';
+            });
+
+        // Device selection handling
+        deviceSelect.addEventListener('change', () => {
+            ipcRenderer.send('update-device', deviceSelect.value);
+        });
+
+        // Theme handling
+        themeSelect.addEventListener('change', () => {
+            const theme = themeSelect.value;
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+            ipcRenderer.send('update-theme', theme);
+        });
+
+        // Hotkey recording
+        hotkeyInput.value = currentHotkey;
+
+        hotkeyInput.addEventListener('focus', () => {
+            recordingKeys = true;
+            pressedKeys.clear();
+            hotkeyInput.value = 'Press keys...';
+        });
+
+        hotkeyInput.addEventListener('blur', () => {
+            recordingKeys = false;
+            if (hotkeyInput.value === 'Press keys...') {
+                hotkeyInput.value = currentHotkey;
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (!recordingKeys) return;
+            e.preventDefault();
+
+            const key = e.key.toLowerCase();
+            const keyMap = {
+                'control': 'CommandOrControl',
+                'meta': 'CommandOrControl',
+                'alt': 'Alt',
+                'shift': 'Shift',
+                'escape': 'Esc',
+                'return': 'Return',
+                'enter': 'Return',
+                ' ': 'Space'
+            };
+
+            const mappedKey = keyMap[key] || key.length === 1 ? key.toUpperCase() : key;
+            
+            if (key === 'control' || key === 'shift' || key === 'alt' || key === 'meta' || key.length === 1 || keyMap[key]) {
+                pressedKeys.add(mappedKey);
+            }
+
+            const keys = Array.from(pressedKeys);
+            if (keys.length > 0) {
+                hotkeyInput.value = keys.join('+');
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!recordingKeys) return;
+            const key = e.key.toLowerCase();
+            const keyMap = {
+                'control': 'CommandOrControl',
+                'meta': 'CommandOrControl',
+                'alt': 'Alt',
+                'shift': 'Shift',
+                'escape': 'Esc',
+                'return': 'Return',
+                'enter': 'Return',
+                ' ': 'Space'
+            };
+            const mappedKey = keyMap[key] || key.length === 1 ? key.toUpperCase() : key;
+            pressedKeys.delete(mappedKey);
+
+            if (pressedKeys.size === 0 && hotkeyInput.value !== 'Press keys...') {
+                currentHotkey = hotkeyInput.value;
+                ipcRenderer.send('update-hotkey', currentHotkey);
+            }
+        });
+
+        // API Key handling
+        apiKeyInput.addEventListener('input', () => {
+            ipcRenderer.send('update-api-key', apiKeyInput.value);
+        });
+
+        apiKeyLink.addEventListener('click', () => {
+            require('electron').shell.openExternal('https://platform.openai.com/api-keys');
+        });
+
+        // Start button
+        startButton.addEventListener('click', () => {
+            ipcRenderer.send('close-welcome', dontShowAgain.checked);
+        });
+
+        // Get current settings
+        ipcRenderer.send('get-theme');
+        ipcRenderer.send('get-api-key');
+        ipcRenderer.send('get-current-hotkey');
+        ipcRenderer.send('get-current-device');
+
+        ipcRenderer.on('current-theme', (event, theme) => {
+            themeSelect.value = theme;
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+        });
+
+        ipcRenderer.on('current-api-key', (event, apiKey) => {
+            apiKeyInput.value = apiKey || '';
+        });
+
+        ipcRenderer.on('current-hotkey', (event, hotkey) => {
+            currentHotkey = hotkey;
+            hotkeyInput.value = hotkey;
+        });
+
+        ipcRenderer.on('current-device', (event, deviceId) => {
+            if (deviceId && deviceSelect.querySelector(`option[value="${deviceId}"]`)) {
+                deviceSelect.value = deviceId;
+            }
+        });
+    </script>
+</body>
+</html> 
