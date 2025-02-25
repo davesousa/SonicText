@@ -2,6 +2,8 @@
 
 SonicText is a powerful desktop (Windows) application that converts speech to text in near real-time, with advanced AI features for optimizing and managing your transcriptions. Built with Electron and powered by OpenAI's Whisper for speech recognition.
 
+This is the open source version of the application. A OpenAI API key is required to use the application.
+
 ## Features
 
 - 🎤 Real-time speech-to-text transcription
@@ -12,16 +14,35 @@ SonicText is a powerful desktop (Windows) application that converts speech to te
 - 📝 Rich transcription history with search and management
 - ⌨️ Global hotkey support for quick access
 - 🎨 Light/Dark theme support
-- 🌐 Multi-language support
+- 🌐 Multi-language support (untested)
 - 🎯 Automatic clipboard integration
 - 🎛️ Customizable input device selection
-- 🚀 Interactive welcome screen for easy setup
 
 ## Installation
 
 1. Download the latest release from the [Releases](https://github.com/davesousa/sonictext/releases) page
 2. Extract the zip file
 3. Run the `SonicText.exe` file to start the application.
+
+## First-Time Setup
+
+When you first launch SonicText, you'll be greeted with a welcome screen that will guide you through:
+
+1. Choosing your preferred theme (Light/Dark)
+2. Setting up your global hotkey (default: Ctrl+Alt+D)
+3. Entering your OpenAI API key
+   - Get your API key from [OpenAI Dashboard](https://platform.openai.com/api-keys)
+   - Enter it in the welcome screen or later in settings
+
+## Usage
+
+1. Press your chosen global hotkey (default: Ctrl+Alt+D) anywhere to activate the transcription window
+2. Speak into your microphone
+3. The transcribed text will automatically be copied to your clipboard
+4. Use the optimization options to clean up and format the text as needed
+5. Access your transcription history through the history panel
+
+The app is portable, so you can extract it to any location and run it from there.
 
 
 ## Development
@@ -42,24 +63,6 @@ npm install
 npm run build
 npm start
 ```
-
-## First-Time Setup
-
-When you first launch SonicText, you'll be greeted with a welcome screen that will guide you through:
-
-1. Choosing your preferred theme (Light/Dark)
-2. Setting up your global hotkey (default: Ctrl+Alt+D)
-3. Entering your OpenAI API key
-   - Get your API key from [OpenAI Dashboard](https://platform.openai.com/api-keys)
-   - Enter it in the welcome screen or later in settings
-
-## Usage
-
-1. Press your chosen global hotkey (default: Ctrl+Alt+D) anywhere to activate the transcription window
-2. Speak into your microphone
-3. The transcribed text will automatically be copied to your clipboard
-4. Use the optimization options to clean up and format the text as needed
-5. Access your transcription history through the history panel
 
 ### Additional Settings
 
