@@ -1,12 +1,12 @@
 # SonicText
 
-SonicText is a powerful desktop application that converts speech to text in real-time, with advanced features for optimizing and managing your transcriptions. Built with Electron and powered by OpenAI's Whisper for speech recognition.
+SonicText is a powerful desktop (Windows) application that converts speech to text in near real-time, with advanced AI features for optimizing and managing your transcriptions. Built with Electron and powered by OpenAI's Whisper for speech recognition.
 
 ## Features
 
 - 🎤 Real-time speech-to-text transcription
 - 🔄 Smart text optimization with multiple modes:
-  - Basic (cleanup and punctuation)
+  - Basic (cleanup filler words and grammar only)
   - Professional (business-ready formatting)
   - Developer (technical documentation style)
 - 📝 Rich transcription history with search and management
@@ -71,7 +71,13 @@ Click the gear icon to access settings where you can:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+-Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Known issues
+
+- Working on getting transcript to enter into the selected text field instead of to clipboard.
+- Several UI inconsistencies
+- Untested on Mac
 
 ## License
 
