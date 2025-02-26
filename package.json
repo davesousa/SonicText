@@ -1,11 +1,12 @@
 {
   "name": "sonictext",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A powerful desktop application that converts speech to text in real-time",
   "main": "dist/main.js",
   "scripts": {
     "dev": "electron .",
-    "build": "tsc",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "xcopy /E /I /Y src\\css dist\\css && xcopy /E /I /Y src\\*.html dist\\",
     "start": "electron .",
     "package": "electron-builder build --windows --config.win.target=portable --config.win.signAndEditExecutable=false"
   },
