@@ -44,50 +44,6 @@ When you first launch SonicText, you'll be greeted with a welcome screen that wi
 
 The app is portable, so you can extract it to any location and run it from there.
 
-## Development Guide
-
-### Building the Application
-
-When building the application after pulling from GitHub, always use:
-
-```
-npm run build
-```
-
-This command:
-1. Compiles TypeScript files
-2. Copies HTML files from src to dist
-3. Copies CSS files from src/css to dist/css
-
-### Starting the Application
-
-To start the application in development mode:
-
-```
-npm start
-```
-
-### Packaging for Distribution
-
-To create a portable Windows executable:
-
-```
-npm run package
-```
-
-The packaged application will be available in the `build` directory.
-
-## Troubleshooting
-
-### CSS Issues After Pull
-
-If you experience CSS issues after pulling from GitHub, ensure you run the full build process:
-
-```
-npm run build
-```
-
-This will ensure all assets are properly copied to the distribution directory.
 
 ## Development
 
