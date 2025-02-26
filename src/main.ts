@@ -168,8 +168,8 @@ function createOptimizeWindow() {
     }
 
     optimizeWindow = new BrowserWindow({
-      width: 400,
-      height: 420,
+      width: 500,
+      height: 460,
       frame: false,
       resizable: false,
       webPreferences: {
@@ -199,23 +199,15 @@ function createHistoryWindow() {
     height: 500,
     resizable: false,
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    hasShadow: false,
+    transparent: false,
+    backgroundColor: getBackgroundColor(),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
 
-  historyWindow.loadFile('src/history.html');
-
-  // Wait for the window to load before setting the shape
-  historyWindow.webContents.on('did-finish-load', () => {
-    if (historyWindow) {
-      historyWindow.setBackgroundColor('#00000000');
-    }
-  });
+  historyWindow.loadFile(path.join(__dirname, 'history.html'));
 
   historyWindow.on('closed', () => {
     historyWindow = null;
@@ -636,4 +628,9 @@ function deleteHistoryItem(id: string) {
 }
 
 // Load settings when app starts
-loadSettings(); 
+loadSettings();
+
+// Helper function to get the background color based on current theme
+function getBackgroundColor() {
+  return currentTheme === 'light' ? '#F5F5F5' : '#1E1E1E';
+} 

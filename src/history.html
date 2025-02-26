@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History - SonicText</title>
+    <title>SonicText History</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="history-container">
         <div class="header">
-            <h2>History</h2>
+            <h2>Voice Recognition History</h2>
             <button id="closeButton" class="close-button">×</button>
         </div>
+        
         <div class="history-list" id="historyList">
             <!-- History items will be inserted here -->
         </div>
@@ -64,6 +65,9 @@
             copyButton.addEventListener('click', async () => {
                 try {
                     await navigator.clipboard.writeText(item.text);
+                    // Visual feedback for copy
+                    copyButton.classList.add('active');
+                    setTimeout(() => copyButton.classList.remove('active'), 500);
                 } catch (err) {
                     // Fallback for older browsers or if clipboard API fails
                     const textArea = document.createElement('textarea');
@@ -72,11 +76,19 @@
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
+                    // Visual feedback for copy
+                    copyButton.classList.add('active');
+                    setTimeout(() => copyButton.classList.remove('active'), 500);
                 }
             });
 
             deleteButton.addEventListener('click', () => {
-                ipcRenderer.send('delete-history-item', item.id);
+                // Add a fade-out animation before sending the delete message
+                div.style.opacity = '0';
+                div.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    ipcRenderer.send('delete-history-item', item.id);
+                }, 300);
             });
 
             return div;
