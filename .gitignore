@@ -8,13 +8,6 @@ yarn-error.log
 dist/
 build/
 out/
-*.exe
-*.dll
-*.pak
-*.dat
-*.bin
-*.asar
-*.zip
 
 # Environment variables and secrets
 .env
