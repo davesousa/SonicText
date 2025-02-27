@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "electron .",
     "package": "electron-builder build --windows --config.win.target=portable --config.win.signAndEditExecutable=false",
-    "postbuild": "copyfiles src/css/*.css dist/css"
+    "postbuild": "copyfiles src/css/*.css dist/css && copyfiles src/*.html dist/"
   },
   "author": "Dave Sousa",
   "license": "Apache-2.0",
