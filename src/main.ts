@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen, ipcMain, clipboard, globalShortcut, Menu, dialog } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, clipboard, globalShortcut, Menu, dialog, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -9,10 +9,11 @@ let settingsWindow: BrowserWindow | null = null;
 let optimizeWindow: BrowserWindow | null = null;
 let historyWindow: BrowserWindow | null = null;
 let welcomeWindow: BrowserWindow | null = null;
+let helpWindow: BrowserWindow | null = null;
 let isHotkeyPressed = false;
 let pressedKeys = new Set();
 let lastActiveWindow: number | null = null;
-let currentHotkey = 'control+shift+d';
+let currentHotkey = 'Control+Shift+D';
 let currentDeviceId = '';
 let currentLanguage = 'en';
 let currentTheme = 'dark';
@@ -24,6 +25,7 @@ let optimizeSettings = {
 };
 let history: { id: string; text: string; timestamp: string; }[] = [];
 let hideWelcomeScreen = false;
+let windowPosition = { x: 0, y: 0 };
 
 // Load settings from file
 function loadSettings() {
@@ -98,10 +100,13 @@ function registerHotkey() {
         }
         
         isHotkeyPressed = true;
-        mainWindow?.setAlwaysOnTop(true, 'screen-saver');
-        mainWindow?.show();
-        mainWindow?.focus();
-        mainWindow?.webContents.send('hotkey-pressed');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          // No need to set position - just show the window where it was
+          mainWindow.setAlwaysOnTop(true, 'screen-saver');
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('hotkey-pressed');
+        }
       }
     });
 
@@ -180,6 +185,14 @@ function createOptimizeWindow() {
 
     optimizeWindow.loadFile(path.join(__dirname, 'optimize.html'));
 
+    // Add a handler for the window's close event
+    optimizeWindow.on('close', () => {
+      // Send a message to the renderer to save settings before the window is destroyed
+      if (optimizeWindow && !optimizeWindow.isDestroyed()) {
+        optimizeWindow.webContents.send('save-before-close');
+      }
+    });
+
     optimizeWindow.on('closed', () => {
       optimizeWindow = null;
     });
@@ -242,6 +255,34 @@ function createWelcomeWindow() {
   }
 }
 
+function createHelpWindow() {
+  try {
+    if (helpWindow && !helpWindow.isDestroyed()) {
+      helpWindow.focus();
+      return;
+    }
+
+    helpWindow = new BrowserWindow({
+      width: 800,
+      height: 700,
+      frame: false,
+      resizable: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+
+    helpWindow.loadFile(path.join(__dirname, 'help.html'));
+
+    helpWindow.on('closed', () => {
+      helpWindow = null;
+    });
+  } catch (error) {
+    console.error('Error creating help window:', error);
+  }
+}
+
 function createWindow() {
   try {
     const { width } = screen.getPrimaryDisplay().workAreaSize;
@@ -260,13 +301,31 @@ function createWindow() {
       }
     });
 
-    mainWindow.setPosition(Math.floor(width / 2 - 312), 0);
+    windowPosition = { x: Math.floor(width / 2 - 312), y: 0 };
+    mainWindow.setPosition(windowPosition.x, windowPosition.y);
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+    // Track window position changes
+    mainWindow.on('moved', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        const [x, y] = mainWindow.getPosition();
+        windowPosition = { x, y };
+      }
+    });
+
+    // Set up initial state when window is ready
+    mainWindow.webContents.once('did-finish-load', () => {
+      // Send the current optimization status to update the icon
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('optimize-status-changed', optimizeSettings.enabled);
+      }
+    });
 
     // Create context menu
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Settings', click: () => createSettingsWindow() },
       { label: 'Welcome Screen', click: () => createWelcomeWindow() },
+      { label: 'Help', click: () => createHelpWindow() },
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() }
     ]);
@@ -304,7 +363,20 @@ function createWindow() {
       try {
         if (mainWindow && !mainWindow.isDestroyed()) {
           const [currentWidth] = mainWindow.getSize();
-          mainWindow.setSize(currentWidth, height);
+          const [currentX, currentY] = mainWindow.getPosition();
+          
+          // Make sure height is within reasonable bounds
+          const minHeight = 100; // Minimum height when just showing the pill
+          const maxHeight = 500; // Maximum height to prevent excessive size
+          const newHeight = Math.max(minHeight, Math.min(maxHeight, height));
+          
+          // Maintain the current X and Y position instead of forcing Y to 0
+          mainWindow.setBounds({ 
+            x: currentX, 
+            y: currentY, 
+            width: currentWidth, 
+            height: newHeight 
+          }, true); // Animate the resize
         }
       } catch (error) {
         console.error('Error adjusting window height:', error);
@@ -315,7 +387,8 @@ function createWindow() {
     ipcMain.on('audio-recorded', async (event, buffer) => {
       try {
         if (!openai) {
-          throw new Error('Please set your OpenAI API key in settings');
+          safeWindowSend(mainWindow, 'transcription-error', 'Please set your OpenAI API key in settings');
+          return;
         }
 
         safeWindowSend(mainWindow, 'transcription-start');
@@ -323,45 +396,57 @@ function createWindow() {
         const tempFile = path.join(os.tmpdir(), `recording-${Date.now()}.webm`);
         fs.writeFileSync(tempFile, buffer);
 
-        const transcription = await openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFile),
-          model: 'whisper-1',
-          language: currentLanguage
-        });
-
-        fs.unlinkSync(tempFile);
-
-        let finalText = transcription.text;
-        
-        if (optimizeSettings.enabled) {
-          safeWindowSend(mainWindow, 'optimization-start');
-          finalText = await optimizeText(finalText, optimizeSettings.mode);
-        }
-
-        safeWindowSend(mainWindow, 'transcription-result', finalText);
-        clipboard.writeText(finalText);
-
-        setTimeout(() => {
-          try {
-            if (lastActiveWindow) {
-              const window = BrowserWindow.fromId(lastActiveWindow);
-              if (window && !window.isDestroyed()) {
-                window.show();
-                window.focus();
-                const menu = Menu.buildFromTemplate([{
-                  label: 'Edit',
-                  submenu: [{ role: 'paste' }]
-                }]);
-                menu.items[0].submenu?.items[0].click();
-              }
-              lastActiveWindow = null;
-            }
-          } catch (error) {
-            console.error('Error handling window focus/paste:', error);
+        try {
+          const transcription = await openai.audio.transcriptions.create({
+            file: fs.createReadStream(tempFile),
+            model: 'whisper-1',
+            language: currentLanguage
+          });
+  
+          fs.unlinkSync(tempFile);
+  
+          let finalText = transcription.text;
+          
+          if (optimizeSettings.enabled) {
+            safeWindowSend(mainWindow, 'optimization-start');
+            finalText = await optimizeText(finalText, optimizeSettings.mode);
           }
-        }, 100);
-
-        addToHistory(finalText);
+  
+          safeWindowSend(mainWindow, 'transcription-result', finalText);
+          clipboard.writeText(finalText);
+  
+          setTimeout(() => {
+            try {
+              if (lastActiveWindow) {
+                const window = BrowserWindow.fromId(lastActiveWindow);
+                if (window && !window.isDestroyed()) {
+                  window.show();
+                  window.focus();
+                  const menu = Menu.buildFromTemplate([{
+                    label: 'Edit',
+                    submenu: [{ role: 'paste' }]
+                  }]);
+                  menu.items[0].submenu?.items[0].click();
+                }
+                lastActiveWindow = null;
+              }
+            } catch (error) {
+              console.error('Error handling window focus/paste:', error);
+            }
+          }, 100);
+  
+          addToHistory(finalText);
+        } catch (error) {
+          // Make sure we clean up the temp file
+          if (fs.existsSync(tempFile)) {
+            try {
+              fs.unlinkSync(tempFile);
+            } catch (e) {
+              console.error('Error deleting temp file:', e);
+            }
+          }
+          throw error;
+        }
       } catch (error: any) {
         console.error('Error handling recorded audio:', error);
         safeWindowSend(mainWindow, 'transcription-error', error?.message || 'Unknown error occurred');
@@ -456,6 +541,13 @@ ipcMain.on('update-optimize-settings', (event, settings) => {
   mainWindow?.webContents.send('optimize-status-changed', settings.enabled);
 });
 
+// Add handler for save-optimize-settings
+ipcMain.on('save-optimize-settings', (event, settings) => {
+  optimizeSettings = settings;
+  saveSettings();
+  mainWindow?.webContents.send('optimize-status-changed', settings.enabled);
+});
+
 // Add theme and language handlers
 ipcMain.on('get-theme', (event) => {
   event.reply('current-theme', currentTheme);
@@ -472,6 +564,16 @@ ipcMain.on('update-theme', (event, theme) => {
   });
 });
 
+// Add device ID synchronous handler for recording
+ipcMain.handle('get-device-id', () => {
+  return currentDeviceId;
+});
+
+// For backward compatibility with sync calls
+ipcMain.on('get-device-id', (event) => {
+  event.returnValue = currentDeviceId;
+});
+
 ipcMain.on('get-language', (event) => {
   event.reply('current-language', currentLanguage);
 });
@@ -483,17 +585,29 @@ ipcMain.on('update-language', (event, language) => {
 
 // Add history handlers
 ipcMain.on('toggle-history', () => {
-  createHistoryWindow();
+  try {
+    if (historyWindow && !historyWindow.isDestroyed()) {
+      historyWindow.close();
+    } else {
+      createHistoryWindow();
+    }
+  } catch (error) {
+    console.error('Error toggling history window:', error);
+  }
 });
 
 ipcMain.on('close-history', () => {
-  if (historyWindow) {
-    historyWindow.close();
+  try {
+    if (historyWindow && !historyWindow.isDestroyed()) {
+      historyWindow.close();
+    }
+  } catch (error) {
+    console.error('Error closing history window:', error);
   }
 });
 
 ipcMain.on('get-history', (event) => {
-  event.reply('history-updated', history);
+  event.reply('history-data', history);
 });
 
 ipcMain.on('delete-history-item', (event, id) => {
@@ -508,6 +622,29 @@ ipcMain.on('update-api-key', (event, newApiKey) => {
   updateApiKey(newApiKey);
 });
 
+// Add help handlers
+ipcMain.on('toggle-help', () => {
+  try {
+    if (helpWindow && !helpWindow.isDestroyed()) {
+      helpWindow.close();
+    } else {
+      createHelpWindow();
+    }
+  } catch (error) {
+    console.error('Error toggling help window:', error);
+  }
+});
+
+ipcMain.on('close-help', () => {
+  try {
+    if (helpWindow && !helpWindow.isDestroyed()) {
+      helpWindow.close();
+    }
+  } catch (error) {
+    console.error('Error closing help window:', error);
+  }
+});
+
 // Clean up shortcuts when app quits
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
@@ -516,6 +653,15 @@ app.on('will-quit', () => {
 app.whenReady().then(() => {
   // Load settings
   loadSettings();
+  
+  // Register global shortcuts
+  globalShortcut.register('CommandOrControl+F1', () => {
+    if (helpWindow && !helpWindow.isDestroyed()) {
+      helpWindow.close();
+    } else {
+      createHelpWindow();
+    }
+  });
   
   // Show welcome screen if not hidden
   if (!hideWelcomeScreen) {
@@ -552,6 +698,125 @@ ipcMain.on('close-welcome', (event, dontShowAgain) => {
     }
   } catch (error) {
     console.error('Error closing welcome window:', error);
+  }
+});
+
+ipcMain.on('welcome-completed', () => {
+  try {
+    if (welcomeWindow && !welcomeWindow.isDestroyed()) {
+      welcomeWindow.close();
+      createWindow();
+    }
+  } catch (error) {
+    console.error('Error completing welcome process:', error);
+  }
+});
+
+ipcMain.on('save-welcome-settings', (event, settings) => {
+  try {
+    currentHotkey = settings.hotkey;
+    currentDeviceId = settings.deviceId;
+    currentTheme = settings.theme;
+    apiKey = settings.apiKey;
+    hideWelcomeScreen = settings.hideWelcomeScreen;
+    
+    // Initialize OpenAI client if API key is provided
+    if (apiKey) {
+      openai = new OpenAI({ apiKey });
+    }
+    
+    // Register the hotkey
+    registerHotkey();
+    
+    // Save the settings
+    saveSettings();
+    
+    // Respond with success
+    event.reply('settings-saved');
+  } catch (error) {
+    console.error('Error saving welcome settings:', error);
+  }
+});
+
+ipcMain.on('get-settings', (event) => {
+  try {
+    event.reply('settings', {
+      theme: currentTheme,
+      hotkey: currentHotkey,
+      deviceId: currentDeviceId,
+      language: currentLanguage,
+      apiKey: apiKey,
+      optimize: optimizeSettings,
+      hideWelcomeScreen: hideWelcomeScreen
+    });
+  } catch (error) {
+    console.error('Error getting settings:', error);
+  }
+});
+
+ipcMain.on('get-audio-devices', async (event) => {
+  try {
+    // Get all media devices
+    const devices = await mainWindow?.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        navigator.mediaDevices.enumerateDevices()
+          .then(devices => {
+            const audioInputDevices = devices
+              .filter(device => device.kind === 'audioinput')
+              .map(device => ({
+                deviceId: device.deviceId,
+                label: device.label || 'Microphone ' + (device.deviceId)
+              }));
+            resolve(audioInputDevices);
+          })
+          .catch(err => {
+            console.error('Error getting devices:', err);
+            resolve([]);
+          });
+      })
+    `);
+    
+    // If we're calling this before main window is created, use a different approach
+    if (!devices || !Array.isArray(devices)) {
+      const tempWindow = new BrowserWindow({
+        width: 1,
+        height: 1,
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      
+      tempWindow.loadURL('about:blank');
+      
+      const tempDevices = await tempWindow.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+              const audioInputDevices = devices
+                .filter(device => device.kind === 'audioinput')
+                .map(device => ({
+                  deviceId: device.deviceId,
+                  label: device.label || 'Microphone ' + (device.deviceId)
+                }));
+              resolve(audioInputDevices);
+            })
+            .catch(err => {
+              console.error('Error getting devices:', err);
+              resolve([]);
+            });
+        })
+      `);
+      
+      tempWindow.close();
+      event.reply('audio-devices', tempDevices || []);
+    } else {
+      event.reply('audio-devices', devices);
+    }
+  } catch (error) {
+    console.error('Error getting audio devices:', error);
+    event.reply('audio-devices', []);
   }
 });
 
@@ -615,7 +880,7 @@ function addToHistory(text: string) {
   }
   saveSettings();
   if (historyWindow) {
-    historyWindow.webContents.send('history-updated', history);
+    historyWindow.webContents.send('history-data', history);
   }
 }
 
@@ -623,7 +888,7 @@ function deleteHistoryItem(id: string) {
   history = history.filter(item => item.id !== id);
   saveSettings();
   if (historyWindow) {
-    historyWindow.webContents.send('history-updated', history);
+    historyWindow.webContents.send('history-data', history);
   }
 }
 

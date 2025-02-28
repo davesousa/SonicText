@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,131 +7,130 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="history-container">
+    <div class="container">
         <div class="header">
-            <h2>Voice Recognition History</h2>
-            <button id="closeButton" class="close-button">×</button>
+            <h2>Recognition History</h2>
+            <button id="closeButton" class="close-button" aria-label="Close">×</button>
         </div>
         
-        <div class="history-list" id="historyList">
-            <!-- History items will be inserted here -->
+        <div id="historyList" class="history-list">
+            <!-- History items will be inserted here by JavaScript -->
+        </div>
+        
+        <div id="emptyHistoryMessage" class="empty-history hidden">
+            <p>No recognition history yet</p>
+            <p class="hint-text">Your speech recognition entries will appear here</p>
         </div>
     </div>
-
+    
     <script>
-        const { ipcRenderer } = require('electron');
+        // Electron imports
+        const { ipcRenderer, clipboard } = require('electron');
+        
+        // DOM elements
         const historyList = document.getElementById('historyList');
+        const emptyHistoryMessage = document.getElementById('emptyHistoryMessage');
         const closeButton = document.getElementById('closeButton');
-
-        function formatDate(date) {
+        
+        // Initialize the history page
+        function initHistory() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Request history data
+            ipcRenderer.send('get-history');
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Close button
+            closeButton.addEventListener('click', () => {
+                ipcRenderer.send('close-history');
+            });
+            
+            // Listen for history data
+            ipcRenderer.on('history-data', (event, historyItems) => {
+                console.log('Received history data:', historyItems); // Debug log
+                renderHistoryItems(historyItems);
+            });
+        }
+        
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
             const now = new Date();
-            const diff = now - new Date(date);
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
-
-            if (minutes < 1) return 'Just now';
-            if (minutes < 60) return `${minutes}m ago`;
-            if (hours < 24) return `${hours}h ago`;
-            if (days === 1) return 'Yesterday';
-            return new Date(date).toLocaleDateString();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            // Format based on how long ago the entry was created
+            if (diffMins < 1) {
+                return 'Just now';
+            } else if (diffMins < 60) {
+                return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+            } else if (diffHours < 24) {
+                return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+            } else if (diffDays < 7) {
+                return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+            } else {
+                // Format as date for older entries
+                return date.toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
         }
-
-        function createHistoryItem(item) {
-            const div = document.createElement('div');
-            div.className = 'history-item';
-            div.innerHTML = `
-                <div class="history-content">
-                    <p class="history-text">${item.text}</p>
-                    <p class="history-date">${formatDate(item.timestamp)}</p>
-                </div>
-                <div class="history-actions">
-                    <button class="history-button copy-button" title="Copy to clipboard">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                        </svg>
-                    </button>
-                    <button class="history-button delete-button" title="Delete">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                        </svg>
-                    </button>
-                </div>
-            `;
-
-            const copyButton = div.querySelector('.copy-button');
-            const deleteButton = div.querySelector('.delete-button');
-
-            copyButton.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(item.text);
-                    // Visual feedback for copy
-                    copyButton.classList.add('active');
-                    setTimeout(() => copyButton.classList.remove('active'), 500);
-                } catch (err) {
-                    // Fallback for older browsers or if clipboard API fails
-                    const textArea = document.createElement('textarea');
-                    textArea.value = item.text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    // Visual feedback for copy
-                    copyButton.classList.add('active');
-                    setTimeout(() => copyButton.classList.remove('active'), 500);
-                }
-            });
-
-            deleteButton.addEventListener('click', () => {
-                // Add a fade-out animation before sending the delete message
-                div.style.opacity = '0';
-                div.style.transform = 'translateX(20px)';
-                setTimeout(() => {
-                    ipcRenderer.send('delete-history-item', item.id);
-                }, 300);
-            });
-
-            return div;
-        }
-
-        function updateHistoryList(history) {
+        
+        // Render history items
+        function renderHistoryItems(historyItems) {
+            console.log('Rendering history items:', historyItems); // Debug log
+            // Clear existing content
             historyList.innerHTML = '';
-            if (history.length === 0) {
-                historyList.innerHTML = '<div class="empty-history">No history items yet</div>';
+            
+            if (historyItems.length === 0) {
+                // Show empty state
+                emptyHistoryMessage.classList.remove('hidden');
+                historyList.classList.add('hidden');
                 return;
             }
-            history.forEach(item => {
-                historyList.appendChild(createHistoryItem(item));
+            
+            // Hide empty state, show list
+            emptyHistoryMessage.classList.add('hidden');
+            historyList.classList.remove('hidden');
+            
+            // Render each history item
+            historyItems.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div class="history-content">
+                        <p>${item.text}</p>
+                        <span class="history-date">${formatDate(item.timestamp)}</span>
+                    </div>
+                    <div class="history-actions">
+                        <button class="copy-button" aria-label="Copy to clipboard">Copy</button>
+                        <button class="close-button" aria-label="Close">×</button>
+                    </div>
+                `;
+                
+                // Add event listeners for buttons
+                historyItem.querySelector('.copy-button').addEventListener('click', () => {
+                    clipboard.writeText(item.text);
+                });
+                historyItem.querySelector('.close-button').addEventListener('click', () => {
+                    historyItem.remove();
+                    // Optionally, send a message to remove from history
+                    // ipcRenderer.send('remove-history-item', item.id);
+                });
+                
+                historyList.appendChild(historyItem);
             });
         }
-
-        // Get current theme and history from main process
-        ipcRenderer.send('get-theme');
-        ipcRenderer.send('get-history');
-
-        ipcRenderer.on('history-updated', (event, history) => {
-            updateHistoryList(history);
-        });
-
-        ipcRenderer.on('current-theme', (event, theme) => {
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-        });
-
-        ipcRenderer.on('theme-changed', (event, theme) => {
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-        });
-
-        closeButton.addEventListener('click', () => {
-            ipcRenderer.send('close-history');
-        });
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initHistory);
     </script>
 </body>
 </html> 

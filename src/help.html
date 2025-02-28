@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SonicText Help</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Help & Documentation</h2>
+            <button id="closeButton" class="close-button" aria-label="Close">×</button>
+        </div>
+        
+        <div class="card">
+            <h3 class="setting-header">Getting Started</h3>
+            <ol class="aligned-list">
+                <li>
+                    <strong>Configure your hotkey</strong> - By default, SonicText uses <code>Ctrl+Alt+D</code>. 
+                    You can change this in Settings.
+                </li>
+                <li>
+                    <strong>Select your microphone</strong> - Choose your preferred microphone from the Settings panel.
+                </li>
+            </ol>
+        </div>
+        
+        <div class="card mt-md">
+            <h3 class="setting-header">Basic Usage</h3>
+            <div class="help-section">
+                <h4>Recording Speech</h4>
+                <ol class="aligned-list">
+                    <li>Press and hold your hotkey (default: <code>Ctrl+Alt+D</code>)</li>
+                    <li>Speak clearly into your microphone</li>
+                    <li>Release the hotkey to stop recording and process your speech</li>
+                    <li>Your transcribed text will appear in a floating window</li>
+                    <li>The text is automatically copied to your clipboard</li>
+                </ol>
+                
+                <h4>Understanding the Status Pill</h4>
+                <p>The status pill shows your current recording state:</p>
+                <ul class="aligned-list">
+                    <li><span class="status-indicator waiting"></span> <strong>Gray</strong>: Waiting for input</li>
+                    <li><span class="status-indicator recording"></span> <strong>Green</strong>: Recording in progress</li>
+                    <li><span class="status-indicator processing"></span> <strong>Yellow</strong>: Processing speech</li>
+                </ul>
+                
+                <h4>Using the Tools</h4>
+                <p>Three icons in the status pill provide additional functionality:</p>
+                <ul class="aligned-list">
+                    <li>
+                        <svg class="tool-icon-example" viewBox="0 0 24 24">
+                            <path d="M12.6 2.4c-.4-.3-.9-.3-1.2 0C9.5 3.9 8 6.2 8 9c0 1.1.3 2.1.8 3H6c-.6 0-1 .4-1 1v2c0 .6.4 1 1 1h1v2c0 .6.4 1 1 1h2v2c0 .6.4 1 1 1h2c.6 0 1-.4 1-1v-2h2c.6 0 1-.4 1-1v-2h1c.6 0 1-.4 1-1v-2c0-.6-.4-1-1-1h-2.8c.5-.9.8-1.9.8-3 0-2.8-1.5-5.1-3.4-6.6zM12 8c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                        </svg>
+                        <strong>Optimize</strong>: Configure text optimization
+                    </li>
+                    <li>
+                        <svg class="tool-icon-example" viewBox="0 0 24 24">
+                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                        </svg>
+                        <strong>History</strong>: View and manage past transcriptions
+                    </li>
+                    <li>
+                        <svg class="tool-icon-example" viewBox="0 0 24 24">
+                            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                        </svg>
+                        <strong>Settings</strong>: Configure application preferences
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-md">
+            <h3 class="setting-header">Text Optimization</h3>
+            <p>
+                SonicText can improve your transcribed text using advanced language processing.
+                Click the optimization icon to configure:
+            </p>
+            
+            <h4>Optimization Modes</h4>
+            <ul class="aligned-list">
+                <li>
+                    <strong>Basic Mode</strong>: Fixes grammar, removes filler words, and adds punctuation.
+                    Best for quick clean-up without changing content.
+                </li>
+                <li>
+                    <strong>Professional Mode</strong>: Polishes text for business communication while 
+                    preserving the original message. Great for emails, reports, and presentations.
+                </li>
+                <li>
+                    <strong>Concise Mode</strong>: Condenses text to its essential points while maintaining clarity.
+                    Perfect for summaries and when brevity is important.
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card mt-md">
+            <h3 class="setting-header">Troubleshooting</h3>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <h4 class="accordion-header">Microphone not working</h4>
+                    <div class="accordion-content">
+                        <p>If your microphone isn't being detected or working properly:</p>
+                        <ol class="aligned-list">
+                            <li>Check if your microphone is properly connected</li>
+                            <li>Ensure SonicText has microphone permissions in your OS settings</li>
+                            <li>Try selecting a different microphone in Settings</li>
+                            <li>Restart the application</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h4 class="accordion-header">Hotkey not responding</h4>
+                    <div class="accordion-content">
+                        <p>If your hotkey doesn't trigger recording:</p>
+                        <ol class="aligned-list">
+                            <li>Check if the hotkey conflicts with another application</li>
+                            <li>Try setting a different hotkey in Settings</li>
+                            <li>Restart the application</li>
+                            <li>Ensure SonicText is running (check system tray)</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h4 class="accordion-header">Text optimization not working</h4>
+                    <div class="accordion-content">
+                        <p>If text optimization isn't functioning:</p>
+                        <ol class="aligned-list">
+                            <li>Check your internet connection</li>
+                            <li>Try a different optimization mode</li>
+                            <li>Restart the application</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h4 class="accordion-header">Poor recognition quality</h4>
+                    <div class="accordion-content">
+                        <p>To improve speech recognition quality:</p>
+                        <ol class="aligned-list">
+                            <li>Use a high-quality microphone</li>
+                            <li>Speak clearly and at a moderate pace</li>
+                            <li>Reduce background noise</li>
+                            <li>Position the microphone properly (typically 6-12 inches from your mouth)</li>
+                            <li>Try selecting a more specific language variant in Settings</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-md text-center">
+            <p>
+                SonicText v2.0.0<br>
+                © 2025 Dave Sousa
+            </p>
+        </div>
+    </div>
+    
+    <style>
+        /* Help page specific styles */
+        .help-section h4 {
+            margin-top: var(--space-md);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .aligned-list {
+            padding-left: var(--space-lg);
+            margin-top: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .aligned-list li {
+            margin-bottom: var(--space-xs);
+        }
+        
+        .tool-icon-example {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-secondary);
+            vertical-align: middle;
+            margin-right: var(--space-xs);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: var(--space-xs);
+            vertical-align: middle;
+        }
+        
+        .status-indicator.waiting {
+            background-color: var(--inactive-indicator);
+        }
+        
+        .status-indicator.recording {
+            background-color: var(--active-indicator);
+        }
+        
+        .status-indicator.processing {
+            background-color: var(--processing-indicator);
+        }
+        
+        .accordion-item {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--space-sm);
+            overflow: hidden;
+        }
+        
+        .accordion-header {
+            padding: var(--space-sm);
+            background-color: var(--bg-elevated);
+            cursor: pointer;
+            margin: 0;
+            position: relative;
+        }
+        
+        .accordion-header:after {
+            content: '+';
+            position: absolute;
+            right: var(--space-md);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .accordion-item.active .accordion-header:after {
+            content: '−';
+        }
+        
+        .accordion-content {
+            padding: 0 var(--space-md);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+        
+        .accordion-item.active .accordion-content {
+            padding: var(--space-md);
+            max-height: 300px;
+        }
+    </style>
+    
+    <script>
+        // Electron imports
+        const { ipcRenderer } = require('electron');
+        
+        // DOM elements
+        const closeButton = document.getElementById('closeButton');
+        const accordionItems = document.querySelectorAll('.accordion-item');
+        
+        // Initialize the help page
+        function initHelp() {
+            // Set up event listeners
+            setupEventListeners();
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Close button
+            closeButton.addEventListener('click', () => {
+                ipcRenderer.send('close-help');
+            });
+            
+            // Accordion functionality
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                header.addEventListener('click', () => {
+                    // Toggle active state on the clicked item
+                    item.classList.toggle('active');
+                    
+                    // Close other accordion items
+                    accordionItems.forEach(otherItem => {
+                        if (otherItem !== item) {
+                            otherItem.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initHelp);
+    </script>
+</body>
+</html> 

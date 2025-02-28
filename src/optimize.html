@@ -1,105 +1,172 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SonicText Optimization</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="settings-container">
+    <div class="container">
         <div class="header">
             <h2>Text Optimization</h2>
-            <button class="close-button" id="closeButton">×</button>
+            <button id="closeButton" class="close-button" aria-label="Close">×</button>
         </div>
-        <div class="setting-group">
-            <div class="setting-row">
-                <label class="toggle-switch">
-                    <input type="checkbox" id="enableOptimize">
-                    <span class="toggle-slider"></span>
-                </label>
-                <span class="setting-label">Enable text optimization</span>
+        
+        <div class="card">
+            <div class="setting-group">
+                <div class="setting-row">
+                    <label class="toggle-switch" for="enableOptimize">
+                        <input type="checkbox" id="enableOptimize">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <label class="setting-label" for="enableOptimize">Enable text optimization</label>
+                </div>
+                <div class="hint-text">Automatically improve your transcribed text using OpenAI technology</div>
             </div>
-            <div class="mode-buttons">
+            
+            <div id="optimizationModes" class="mode-buttons">
                 <button class="mode-button" data-mode="basic">
                     <span class="mode-button-title">Basic Mode</span>
                     <span class="mode-button-description">Cleans up transcription by fixing grammar, removing filler words, and adding proper punctuation.</span>
                 </button>
+                
                 <button class="mode-button" data-mode="professional">
                     <span class="mode-button-title">Professional Mode</span>
                     <span class="mode-button-description">Polishes text for business communication while preserving the original message.</span>
                 </button>
-                <button class="mode-button" data-mode="dev">
-                    <span class="mode-button-title">Developer Mode</span>
-                    <span class="mode-button-description">Structures text for technical documentation and AI prompts with precise language.</span>
+                
+                <button class="mode-button" data-mode="concise">
+                    <span class="mode-button-title">Concise Mode</span>
+                    <span class="mode-button-description">Condenses text to its essential points while maintaining clarity.</span>
                 </button>
             </div>
         </div>
     </div>
+    
     <script>
+        // Electron imports
         const { ipcRenderer } = require('electron');
+        
+        // DOM elements
         const enableOptimize = document.getElementById('enableOptimize');
+        const optimizationModes = document.getElementById('optimizationModes');
         const modeButtons = document.querySelectorAll('.mode-button');
         const closeButton = document.getElementById('closeButton');
-        let currentMode = 'professional';
-
-        // Get current settings from main process
-        ipcRenderer.send('get-optimize-settings');
-        ipcRenderer.send('get-theme');
-
-        function updateModeButtons(mode) {
+        
+        // Current settings
+        let currentSettings = {
+            enabled: false,
+            mode: 'professional'
+        };
+        
+        // Initialize the page
+        function initOptimizePage() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Request current settings
+            ipcRenderer.send('get-optimize-settings');
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Toggle enable/disable
+            enableOptimize.addEventListener('change', () => {
+                currentSettings.enabled = enableOptimize.checked;
+                updateModeButtonsState();
+                saveSettings(); // Save settings immediately when toggle changes
+            });
+            
+            // Mode selection
             modeButtons.forEach(button => {
-                button.classList.toggle('active', enableOptimize.checked && button.dataset.mode === mode);
+                button.addEventListener('click', () => {
+                    selectMode(button.dataset.mode);
+                    saveSettings(); // Save settings immediately when mode changes
+                });
             });
-            document.body.classList.toggle('optimization-disabled', !enableOptimize.checked);
-        }
-
-        function updateSettings(enabled, mode) {
-            const settings = { enabled, mode };
-            ipcRenderer.send('update-optimize-settings', settings);
-            updateModeButtons(mode);
-            currentMode = mode;
-        }
-
-        ipcRenderer.on('optimize-settings', (event, settings) => {
-            enableOptimize.checked = settings.enabled;
-            currentMode = settings.mode;
-            updateModeButtons(settings.mode);
-        });
-
-        ipcRenderer.on('current-theme', (event, theme) => {
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-        });
-
-        ipcRenderer.on('theme-changed', (event, theme) => {
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-        });
-
-        // Handle enable/disable toggle
-        enableOptimize.addEventListener('change', () => {
-            updateSettings(enableOptimize.checked, currentMode);
-        });
-
-        // Handle mode selection
-        modeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const mode = button.dataset.mode;
-                enableOptimize.checked = true;
-                updateSettings(true, mode);
+            
+            // Close button
+            closeButton.addEventListener('click', () => {
+                ipcRenderer.send('close-optimize');
             });
-        });
-
-        // Handle close button
-        closeButton.addEventListener('click', () => {
-            ipcRenderer.send('close-optimize');
-        });
+            
+            // Receive settings from main process
+            ipcRenderer.on('optimize-settings', (event, settings) => {
+                updateUIFromSettings(settings);
+            });
+            
+            // Save before close message from main process
+            ipcRenderer.on('save-before-close', () => {
+                saveSettings();
+            });
+        }
+        
+        // Update UI based on settings
+        function updateUIFromSettings(settings) {
+            currentSettings = { ...currentSettings, ...settings };
+            
+            // Update toggle
+            enableOptimize.checked = currentSettings.enabled;
+            
+            // Update mode selection
+            selectMode(currentSettings.mode || 'professional', false);
+            
+            // Update UI state
+            updateModeButtonsState();
+        }
+        
+        // Select a mode
+        function selectMode(mode, updateSettings = true) {
+            // Remove active class from all buttons
+            modeButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Add active class to selected button
+            const selectedButton = document.querySelector(`.mode-button[data-mode="${mode}"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('active');
+            }
+            
+            // Update settings if requested
+            if (updateSettings) {
+                currentSettings.mode = mode;
+            }
+        }
+        
+        // Update mode buttons enabled/disabled state
+        function updateModeButtonsState() {
+            const isEnabled = currentSettings.enabled;
+            
+            // Enable/disable mode buttons
+            modeButtons.forEach(button => {
+                button.disabled = !isEnabled;
+                button.style.opacity = isEnabled ? '1' : '0.5';
+                button.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+            });
+        }
+        
+        // Save settings
+        function saveSettings() {
+            ipcRenderer.send('save-optimize-settings', currentSettings);
+            
+            // Show feedback
+            const feedbackToast = document.createElement('div');
+            feedbackToast.className = 'save-indicator visible';
+            feedbackToast.textContent = 'Settings saved';
+            document.body.appendChild(feedbackToast);
+            
+            setTimeout(() => {
+                feedbackToast.classList.remove('visible');
+                setTimeout(() => {
+                    document.body.removeChild(feedbackToast);
+                }, 300);
+            }, 2000);
+        }
+        
+        // Initialize page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initOptimizePage);
     </script>
 </body>
 </html> 

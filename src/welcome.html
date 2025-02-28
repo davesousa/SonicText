@@ -1,17 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to SonicText</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to SonicText</h1>
+        <h1 class="text-center">Welcome to SonicText</h1>
+        <p class="text-center mb-lg">Let's set up your speech recognition assistant</p>
         
-        <div class="setup-grid">
-            <div class="setup-step">
-                <h2>1. Choose Your Theme</h2>
-                <div class="input-container">
+        <div class="grid">
+            <!-- Theme Selection -->
+            <div class="card">
+                <h3 class="setting-header">1. Choose Your Theme</h3>
+                <div class="setting-group">
                     <select id="themeSelect">
                         <option value="dark">Dark Theme</option>
                         <option value="light">Light Theme</option>
@@ -19,219 +23,291 @@
                     <div class="hint-text">Select your preferred appearance</div>
                 </div>
             </div>
-
-            <div class="setup-step">
-                <h2>2. Set Your Hotkey</h2>
-                <div class="input-container">
+            
+            <!-- Hotkey Selection -->
+            <div class="card">
+                <h3 class="setting-header">2. Set Your Hotkey</h3>
+                <div class="setting-group">
                     <input type="text" id="hotkeyInput" placeholder="Click to set hotkey" readonly>
-                    <div class="hint-text">Default: Ctrl+Alt+D (Click the input to change)</div>
+                    <div class="hint-text">Default: Ctrl+Shift+D (Click to change)</div>
                 </div>
             </div>
-
-            <div class="setup-step">
-                <h2>3. Select Input Device</h2>
-                <div class="input-container">
-                    <select id="deviceSelect">
-                        <option value="">Loading devices...</option>
-                    </select>
+            
+            <!-- Microphone Selection -->
+            <div class="card">
+                <h3 class="setting-header">3. Select Microphone</h3>
+                <div class="setting-group">
+                    <select id="deviceSelect"></select>
                     <div class="hint-text">Choose your preferred microphone</div>
                 </div>
             </div>
-
-            <div class="setup-step">
-                <h2>4. Enter OpenAI API Key</h2>
-                <div class="input-container">
+            
+            <!-- API Integration -->
+            <div class="card">
+                <h3 class="setting-header">4. OpenAI Integration (Optional)</h3>
+                <div class="setting-group">
                     <input type="password" id="apiKeyInput" placeholder="Enter your OpenAI API key">
-                    <div class="hint-text">Don't have an API key? <span id="apiKeyLink">Get one here</span></div>
+                    <div class="hint-text">Required for text optimization features. Get your API key from the <a href="#" id="openApiKeyLink">OpenAI Dashboard</a></div>
                 </div>
             </div>
         </div>
-
-        <div class="instructions">
-            <h2>Quick Start Guide</h2>
-            <ul>
-                <li><strong>Recording:</strong> Press your hotkey (default: Ctrl+Alt+D) anywhere to start recording</li>
-                <li><strong>Transcription:</strong> Your speech will be automatically transcribed and copied to clipboard</li>
-                <li><strong>Settings:</strong> Click the gear icon to adjust microphone, language, and other settings</li>
-                <li><strong>History:</strong> Access your past transcriptions through the history panel</li>
-            </ul>
+        
+        <!-- Instructions -->
+        <div class="card mt-lg">
+            <h3 class="setting-header">How to Use SonicText</h3>
+            <ol>
+                <li>Press the hotkey (default <strong>Ctrl+Shift+D</strong>) to start recording.</li>
+                <li>Speak clearly into your microphone.</li>
+                <li>Release the hotkey to stop recording and process your speech.</li>
+                <li>Your transcribed text will appear in a floating window.</li>
+                <li>Use the toolbar icons to optimize text, view history, or adjust settings.</li>
+            </ol>
         </div>
-
-        <button id="startButton">Start Using SonicText</button>
-
-        <div class="checkbox-container">
-            <input type="checkbox" id="dontShowAgain">
-            <label for="dontShowAgain">Don't show this welcome screen on startup</label>
+        
+        <!-- Action Buttons -->
+        <div class="setting-group mt-lg text-center">
+            <div class="setting-row" style="justify-content: center;">
+                <label class="toggle-switch" for="dontShowAgain">
+                    <input type="checkbox" id="dontShowAgain">
+                    <span class="toggle-slider"></span>
+                </label>
+                <label class="setting-label" for="dontShowAgain">Don't show this screen again</label>
+            </div>
+            <button id="getStartedButton" class="mt-md">Get Started</button>
         </div>
     </div>
-
+    
     <script>
-        const { ipcRenderer } = require('electron');
-        const hotkeyInput = document.getElementById('hotkeyInput');
-        const apiKeyInput = document.getElementById('apiKeyInput');
+        // Electron imports
+        const { ipcRenderer, shell } = require('electron');
+        
+        // DOM elements
         const themeSelect = document.getElementById('themeSelect');
+        const hotkeyInput = document.getElementById('hotkeyInput');
         const deviceSelect = document.getElementById('deviceSelect');
-        const startButton = document.getElementById('startButton');
-        const apiKeyLink = document.getElementById('apiKeyLink');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const openApiKeyLink = document.getElementById('openApiKeyLink');
         const dontShowAgain = document.getElementById('dontShowAgain');
-
-        let currentHotkey = 'CommandOrControl+Alt+D';
-        let recordingKeys = false;
-        let pressedKeys = new Set();
-
-        // Load available audio devices
-        async function loadAudioDevices() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const audioDevices = devices.filter(device => device.kind === 'audioinput');
+        const getStartedButton = document.getElementById('getStartedButton');
+        
+        // State variables
+        let currentRecordingKeys = [];
+        let isRecordingHotkey = false;
+        let currentSettings = {
+            theme: 'dark',
+            hotkey: 'Control+Shift+D',
+            deviceId: '',
+            apiKey: '',
+            hideWelcomeScreen: false
+        };
+        
+        // Initialize the welcome page
+        function initWelcome() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Request available audio devices
+            ipcRenderer.send('get-audio-devices');
+            
+            // Request current settings
+            ipcRenderer.send('get-settings');
+            
+            // Apply theme
+            applyTheme(currentSettings.theme);
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Theme selection
+            themeSelect.addEventListener('change', () => {
+                currentSettings.theme = themeSelect.value;
+                applyTheme(currentSettings.theme);
+            });
+            
+            // Hotkey recording
+            hotkeyInput.addEventListener('click', startHotkeyRecording);
+            
+            // API key link
+            openApiKeyLink.addEventListener('click', () => {
+                shell.openExternal('https://platform.openai.com/account/api-keys');
+            });
+            
+            // Get started button
+            getStartedButton.addEventListener('click', () => {
+                // Make sure the displayed values are saved
+                currentSettings.theme = themeSelect.value;
+                currentSettings.deviceId = deviceSelect.value;
+                currentSettings.apiKey = apiKeyInput.value;
+                currentSettings.hideWelcomeScreen = dontShowAgain.checked;
                 
-                deviceSelect.innerHTML = '';
-                audioDevices.forEach(device => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.text = device.label || `Microphone ${device.deviceId.slice(0, 5)}...`;
-                    deviceSelect.appendChild(option);
-                });
-
-                // Get current device
-                ipcRenderer.send('get-current-device');
-            } catch (error) {
-                console.error('Error loading audio devices:', error);
-                deviceSelect.innerHTML = '<option value="">Error loading devices</option>';
+                // Use default hotkey if none set
+                if (!currentSettings.hotkey) {
+                    currentSettings.hotkey = 'Control+Shift+D';
+                }
+                
+                // Save settings first
+                ipcRenderer.send('save-welcome-settings', currentSettings);
+                
+                // Then complete the welcome process
+                ipcRenderer.send('welcome-completed');
+            });
+            
+            // Receive audio devices
+            ipcRenderer.on('audio-devices', (event, devices) => {
+                populateDevices(devices);
+            });
+            
+            // Receive settings
+            ipcRenderer.on('settings', (event, settings) => {
+                populateSettings(settings);
+            });
+        }
+        
+        // Apply theme to body
+        function applyTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+        }
+        
+        // Populate device selection dropdown
+        function populateDevices(devices) {
+            // Clear existing options
+            deviceSelect.innerHTML = '';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Default Microphone';
+            deviceSelect.appendChild(defaultOption);
+            
+            // Add device options
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `Microphone ${deviceSelect.options.length}`;
+                deviceSelect.appendChild(option);
+            });
+            
+            // Select current device if set
+            if (currentSettings.deviceId) {
+                deviceSelect.value = currentSettings.deviceId;
             }
         }
-
-        // Request microphone permissions and load devices
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(() => loadAudioDevices())
-            .catch(error => {
-                console.error('Error getting audio permissions:', error);
-                deviceSelect.innerHTML = '<option value="">No microphone access</option>';
-            });
-
-        // Device selection handling
-        deviceSelect.addEventListener('change', () => {
-            ipcRenderer.send('update-device', deviceSelect.value);
-        });
-
-        // Theme handling
-        themeSelect.addEventListener('change', () => {
-            const theme = themeSelect.value;
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-            }
-            ipcRenderer.send('update-theme', theme);
-        });
-
-        // Hotkey recording
-        hotkeyInput.value = currentHotkey;
-
-        hotkeyInput.addEventListener('focus', () => {
-            recordingKeys = true;
-            pressedKeys.clear();
-            hotkeyInput.value = 'Press keys...';
-        });
-
-        hotkeyInput.addEventListener('blur', () => {
-            recordingKeys = false;
-            if (hotkeyInput.value === 'Press keys...') {
-                hotkeyInput.value = currentHotkey;
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (!recordingKeys) return;
-            e.preventDefault();
-
-            const key = e.key.toLowerCase();
-            const keyMap = {
-                'control': 'CommandOrControl',
-                'meta': 'CommandOrControl',
-                'alt': 'Alt',
-                'shift': 'Shift',
-                'escape': 'Esc',
-                'return': 'Return',
-                'enter': 'Return',
-                ' ': 'Space'
-            };
-
-            const mappedKey = keyMap[key] || key.length === 1 ? key.toUpperCase() : key;
+        
+        // Populate form with current settings
+        function populateSettings(settings) {
+            if (!settings) return;
             
-            if (key === 'control' || key === 'shift' || key === 'alt' || key === 'meta' || key.length === 1 || keyMap[key]) {
-                pressedKeys.add(mappedKey);
+            currentSettings = { ...currentSettings, ...settings };
+            
+            themeSelect.value = currentSettings.theme || 'dark';
+            applyTheme(currentSettings.theme);
+            
+            if (settings.hotkey) {
+                let hotkeyDisplay = settings.hotkey
+                    .replace(/commandorcontrol/i, 'Ctrl')
+                    .replace(/\+/g, ' + ')
+                    .split(' + ')
+                    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                    .join(' + ');
+                
+                hotkeyInput.value = hotkeyDisplay;
+                hotkeyInput.dataset.accelerator = settings.hotkey;
+            } else {
+                hotkeyInput.value = 'Ctrl + Shift + D';
+                currentSettings.hotkey = 'Control+Shift+D';
             }
-
-            const keys = Array.from(pressedKeys);
-            if (keys.length > 0) {
-                hotkeyInput.value = keys.join('+');
+            
+            if (settings.apiKey) {
+                apiKeyInput.value = settings.apiKey;
             }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (!recordingKeys) return;
+            
+            if (settings.deviceId && deviceSelect.querySelector(`option[value="${settings.deviceId}"]`)) {
+                deviceSelect.value = settings.deviceId;
+            }
+        }
+        
+        // Start recording a new hotkey
+        function startHotkeyRecording() {
+            if (isRecordingHotkey) return;
+            
+            isRecordingHotkey = true;
+            currentRecordingKeys = [];
+            hotkeyInput.value = 'Press keys...';
+            hotkeyInput.classList.add('recording');
+            
+            document.addEventListener('keydown', recordHotkeyDown);
+            document.addEventListener('keyup', recordHotkeyUp);
+        }
+        
+        // Handle keydown during hotkey recording
+        function recordHotkeyDown(e) {
+            if (!isRecordingHotkey) return;
+            
+            e.preventDefault();
+            
             const key = e.key.toLowerCase();
-            const keyMap = {
-                'control': 'CommandOrControl',
-                'meta': 'CommandOrControl',
-                'alt': 'Alt',
-                'shift': 'Shift',
-                'escape': 'Esc',
-                'return': 'Return',
-                'enter': 'Return',
-                ' ': 'Space'
-            };
-            const mappedKey = keyMap[key] || key.length === 1 ? key.toUpperCase() : key;
-            pressedKeys.delete(mappedKey);
-
-            if (pressedKeys.size === 0 && hotkeyInput.value !== 'Press keys...') {
-                currentHotkey = hotkeyInput.value;
-                ipcRenderer.send('update-hotkey', currentHotkey);
+            if (!currentRecordingKeys.includes(key) && 
+                !['shift', 'control', 'alt', 'meta'].includes(key)) {
+                currentRecordingKeys.push(key);
             }
-        });
-
-        // API Key handling
-        apiKeyInput.addEventListener('input', () => {
-            ipcRenderer.send('update-api-key', apiKeyInput.value);
-        });
-
-        apiKeyLink.addEventListener('click', () => {
-            require('electron').shell.openExternal('https://platform.openai.com/api-keys');
-        });
-
-        // Start button
-        startButton.addEventListener('click', () => {
-            ipcRenderer.send('close-welcome', dontShowAgain.checked);
-        });
-
-        // Get current settings
-        ipcRenderer.send('get-theme');
-        ipcRenderer.send('get-api-key');
-        ipcRenderer.send('get-current-hotkey');
-        ipcRenderer.send('get-current-device');
-
-        ipcRenderer.on('current-theme', (event, theme) => {
-            themeSelect.value = theme;
-            if (theme === 'light') {
-                document.body.classList.add('light-theme');
+            
+            let keyDisplay = [];
+            if (e.ctrlKey) keyDisplay.push('Ctrl');
+            if (e.altKey) keyDisplay.push('Alt');
+            if (e.shiftKey) keyDisplay.push('Shift');
+            if (e.metaKey) keyDisplay.push('Meta');
+            
+            currentRecordingKeys.forEach(k => {
+                if (!['shift', 'control', 'alt', 'meta'].includes(k)) {
+                    keyDisplay.push(k.toUpperCase());
+                }
+            });
+            
+            hotkeyInput.value = keyDisplay.join(' + ');
+        }
+        
+        // Handle keyup during hotkey recording
+        function recordHotkeyUp(e) {
+            if (!isRecordingHotkey) return;
+            
+            const key = e.key.toLowerCase();
+            
+            // If a modifier key is released, stop recording
+            if (['shift', 'control', 'alt', 'meta'].includes(key)) {
+                finishHotkeyRecording();
             }
-        });
-
-        ipcRenderer.on('current-api-key', (event, apiKey) => {
-            apiKeyInput.value = apiKey || '';
-        });
-
-        ipcRenderer.on('current-hotkey', (event, hotkey) => {
-            currentHotkey = hotkey;
-            hotkeyInput.value = hotkey;
-        });
-
-        ipcRenderer.on('current-device', (event, deviceId) => {
-            if (deviceId && deviceSelect.querySelector(`option[value="${deviceId}"]`)) {
-                deviceSelect.value = deviceId;
-            }
-        });
+        }
+        
+        // Finish recording hotkey
+        function finishHotkeyRecording() {
+            isRecordingHotkey = false;
+            hotkeyInput.classList.remove('recording');
+            
+            document.removeEventListener('keydown', recordHotkeyDown);
+            document.removeEventListener('keyup', recordHotkeyUp);
+            
+            // Create accelerator string for Electron
+            let accelerator = [];
+            if (currentRecordingKeys.includes('control')) accelerator.push('CommandOrControl');
+            else if (currentRecordingKeys.includes('meta')) accelerator.push('CommandOrControl');
+            else if (navigator.platform.indexOf('Mac') > -1 && 
+                     currentRecordingKeys.includes('control')) accelerator.push('Control');
+            else if (currentRecordingKeys.includes('control')) accelerator.push('Control');
+            
+            if (currentRecordingKeys.includes('shift')) accelerator.push('Shift');
+            if (currentRecordingKeys.includes('alt')) accelerator.push('Alt');
+            
+            currentRecordingKeys.forEach(key => {
+                if (!['shift', 'control', 'alt', 'meta'].includes(key)) {
+                    accelerator.push(key);
+                }
+            });
+            
+            currentSettings.hotkey = accelerator.join('+');
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initWelcome);
     </script>
 </body>
 </html> 

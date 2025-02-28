@@ -1,100 +1,128 @@
 # SonicText
 
-SonicText is a powerful desktop (Windows) application that converts speech to text in near real-time, with advanced AI features for optimizing and managing your transcriptions. Built with Electron and powered by OpenAI's Whisper for speech recognition.
+A powerful desktop application that converts speech to text in real-time, with AI-powered text optimization.
 
-This is the open source version of the application. A OpenAI API key is required to use the application.
+![SonicText](screenshots/sonictext.png)
 
 ## Features
 
-- 🎤 Real-time speech-to-text transcription
-- 🔄 Smart text optimization with multiple modes:
-  - Basic (cleanup filler words and grammar only)
-  - Professional (business-ready formatting)
-  - Developer (technical documentation style)
-- 📝 Rich transcription history with search and management
-- ⌨️ Global hotkey support for quick access
-- 🎨 Light/Dark theme support
-- 🌐 Multi-language support (untested)
-- 🎯 Automatic clipboard integration
-- 🎛️ Customizable input device selection
+- **Real-time Speech Recognition** - Convert your voice to text with high accuracy
+- **Global Hotkey** - Start recording from anywhere with a customizable keyboard shortcut
+- **Text Optimization** - Enhance your transcribed text using OpenAI's API
+- **Multiple Languages** - Support for various languages and dialects
+- **History Management** - Access and manage your previous transcriptions
+- **Sleek UI** - Modern interface with dark and light themes
+- **Cross-Platform** - Available for Windows, macOS, and Linux
 
 ## Installation
 
+### Windows
+
 1. Download the latest release from the [Releases](https://github.com/davesousa/sonictext/releases) page
-2. Extract the zip file
-3. Run the `SonicText.exe` file to start the application.
+2. Choose either the installer (.exe) or portable (.zip) version
+3. Run the application and follow the setup wizard
 
-## First-Time Setup
+### macOS
 
-When you first launch SonicText, you'll be greeted with a welcome screen that will guide you through:
+1. Download the latest .dmg file from the [Releases](https://github.com/davesousa/sonictext/releases) page
+2. Open the .dmg file and drag SonicText to your Applications folder
+3. Launch from the Applications folder
 
-1. Choosing your preferred theme (Light/Dark)
-2. Setting up your global hotkey (default: Ctrl+Alt+D)
-3. Entering your OpenAI API key
-   - Get your API key from [OpenAI Dashboard](https://platform.openai.com/api-keys)
-   - Enter it in the welcome screen or later in settings
+### Linux
+
+1. Download the .AppImage or .deb file from the [Releases](https://github.com/davesousa/sonictext/releases) page
+2. Make the AppImage executable: `chmod +x SonicText-*.AppImage`
+3. Run the AppImage or install the .deb package
 
 ## Usage
 
-1. Press your chosen global hotkey (default: Ctrl+Alt+D) anywhere to activate the transcription window
-2. Speak into your microphone
-3. The transcribed text will automatically be copied to your clipboard
-4. Use the optimization options to clean up and format the text as needed
-5. Access your transcription history through the history panel
+### Basic Usage
 
-The app is portable, so you can extract it to any location and run it from there.
+1. Press the global hotkey (default: `Ctrl+Alt+D`) to start recording
+2. Speak clearly into your microphone
+3. Release the hotkey to stop recording and process your speech
+4. Your transcribed text will appear in a floating window
+5. The text is automatically copied to your clipboard for easy pasting
 
+### Text Optimization
+
+SonicText can improve your transcriptions with AI-powered optimization:
+
+1. Click the optimization icon in the toolbar
+2. Enable text optimization and choose your preferred mode:
+   - **Basic** - Fixes grammar, removes filler words, adds punctuation
+   - **Professional** - Polishes text for business communication
+   - **Concise** - Condenses text to essential points
+
+*Note: Text optimization requires an OpenAI API key.*
+
+### Settings
+
+Access the settings panel by clicking the gear icon:
+
+- **General** - Customize hotkey, theme, and startup behavior
+- **Audio** - Select your preferred microphone and language
+- **API Integration** - Add your OpenAI API key for text optimization
+- **Advanced** - Clear history and reset settings
 
 ## Development
 
-1. Clone the repository:
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
+
+### Setup
+
 ```bash
+# Clone the repository
 git clone https://github.com/davesousa/sonictext.git
 cd sonictext
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Build and run:
-```bash
+# Development mode
+npm run dev
+
+# Build for production
 npm run build
-npm start
+
+# Package for distribution
+npm run package
 ```
 
-### Additional Settings
+### Project Structure
 
-Click the gear icon to access settings where you can:
-- Change your microphone input device
-- Select transcription language
-- Modify the global hotkey
-- Switch between light and dark themes
-- Update your OpenAI API key
+```
+sonictext/
+├── src/                 # Source code
+│   ├── css/             # Stylesheets
+│   ├── main.ts          # Main Electron process
+│   ├── index.html       # Main UI
+│   ├── settings.html    # Settings UI
+│   ├── history.html     # History UI
+│   ├── optimize.html    # Optimization UI
+│   └── welcome.html     # Welcome/setup UI
+├── dist/                # Compiled output
+├── build/               # Build output
+└── package.json         # Project metadata
+```
 
-## Development
+## Configuration
 
-- `npm run dev` - Start the app in development mode
-- `npm run build` - Build the app for production
-- `npm run package` - Package the app for distribution
+SonicText stores user settings in:
 
-## Contributing
-
--Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Known issues
-
-- Working on getting transcript to enter into the selected text field instead of to clipboard.
-- Several UI inconsistencies
-- Untested on Mac
+- Windows: `%APPDATA%\sonictext\settings.json`
+- macOS: `~/Library/Application Support/sonictext/settings.json`
+- Linux: `~/.config/sonictext/settings.json`
 
 ## License
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License - see the LICENSE file for details.
 
 ## Acknowledgments
 
-- OpenAI Whisper for speech recognition
-- Electron for the desktop framework
-- OpenAI GPT for text optimization 
+- [Electron](https://www.electronjs.org/) - For the cross-platform framework
+- [OpenAI](https://openai.com/) - For the powerful text optimization API
+- [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API) - For speech recognition capabilities
