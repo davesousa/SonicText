@@ -215,12 +215,12 @@
                 resultBox.classList.add('processing');
                 resultBox.classList.remove('visible', 'error');
                 adjustWindowHeight();
-            });
-            
-            ipcRenderer.on('transcription-error', (event, error) => {
+        });
+
+        ipcRenderer.on('transcription-error', (event, error) => {
                 updateStatus(`Error: ${error}`);
                 updateProcessingState(false);
-                resultBox.textContent = `Error: ${error}`;
+            resultBox.textContent = `Error: ${error}`;
                 resultBox.classList.add('visible', 'error');
                 adjustWindowHeight();
             });
@@ -254,16 +254,16 @@
             // Tool icons click listeners
             helpIcon.addEventListener('click', () => {
                 ipcRenderer.send('toggle-help');
-            });
-            
-            optimizeIcon.addEventListener('click', () => {
-                ipcRenderer.send('toggle-optimize');
-            });
-            
-            historyIcon.addEventListener('click', () => {
-                ipcRenderer.send('toggle-history');
-            });
-            
+        });
+
+        optimizeIcon.addEventListener('click', () => {
+            ipcRenderer.send('toggle-optimize');
+        });
+
+        historyIcon.addEventListener('click', () => {
+            ipcRenderer.send('toggle-history');
+        });
+
             settingsIcon.addEventListener('click', () => {
                 ipcRenderer.send('toggle-settings');
             });
@@ -340,7 +340,7 @@
             if (!isRecording || !mediaRecorder) return;
             
             try {
-                mediaRecorder.stop();
+                    mediaRecorder.stop();
                 updateRecordingState(false);
                 updateProcessingState(true);
             } catch (error) {
